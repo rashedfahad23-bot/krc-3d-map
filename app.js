@@ -151,6 +151,7 @@ function crown(x, y, z, rx, ry, n, tint, bt0) {
 }
 const TREES = []; /* every tree position, so a Meshy tree can take over */
 function tree(x, z, list = TREES) {
+  if (z < Z(60) && GATEX.some(g => Math.abs(x - g) < 9)) return;
   const h = 5.5 + rnd() * 3.5, r = 2.5 + rnd() * 1.5, g = 0.82 + rnd() * 0.22, lean = (rnd() - .5) * 0.06;
   list.push([x, z, h + r * 0.9]);
   cyl(XF(x, 0, z, rnd() * 6, lean), 0.14, 0.26, h * 0.72, 6, mulc(ONE, 0.9 + rnd() * 0.2), false, B.tbark);
@@ -323,7 +324,7 @@ function endQuad(info, end, zpx, wd, y0, y1, b, col, rep, off) {
     box(XF(tx, 0, tz), s, h, s, ONE, { b: B.stone, side: { b: t[1], only: '-x', rx: 1 } }); hip(XF(tx, h, tz), s + 2.2, s + 2.2, 2.5, ONE); boxes.push([tx - s / 2, tz - s / 2, tx + s / 2, tz + s / 2]);
   });
   function wall(x0, z0, x1, z1) { box(XF(X((x0 + x1) / 2), 0, Z((z0 + z1) / 2)), Math.max(0.5, Math.abs(x1 - x0) * S), 2.4, Math.max(0.5, Math.abs(z1 - z0) * S), ONE, { b: B.stone }); }
-  wall(183, 203, 183, 400); wall(183, 590, 183, 979); wall(254, 4, 814, 4); wall(848, 4, 2792, 4); wall(183, 975, 2792, 975); wall(2792, 4, 2792, 975);
+  wall(183, 203, 183, 400); wall(183, 590, 183, 979); wall(254, 4, 814, 4); wall(848, 4, 1582, 4); wall(1618, 4, 2387, 4); wall(2423, 4, 2792, 4); /* gaps: the two back gates */ wall(183, 975, 2792, 975); wall(2792, 4, 2792, 975);
   [[Z(400), -1], [Z(590), 1]].forEach(e => {
     const z0 = e[0], z1 = e[0] + e[1] * 7, xa = X(183) - 0.25, xb = X(183) + 0.25, zm = (z0 + z1) / 2;
     tri(B.stone, [xa, 2.4, z0], [xa, 2.4, z1], [xa, 4.6, z0], ONE, null, null, null, [xb + 5, 3, zm]); tri(B.stone, [xb, 2.4, z0], [xb, 2.4, z1], [xb, 4.6, z0], ONE, null, null, null, [xa - 5, 3, zm]);
@@ -457,6 +458,18 @@ shed(229, 250, 271, 395, 3.4); shed(363, 0, 539, 49, 3.4);
   for (let i = 0; i < 5; i++) box(XF(cx - w / 2 + 3 + i * 4.4, 0, cz - 0.6), 4.2, 2.2 + 0.5 * ((i * 7) % 3), d - 2.6, mulc(HAY, 0.92 + 0.05 * (i % 3)));
   boxes.push([cx - w / 2, cz - d / 2, cx + w / 2, cz + d / 2]);
 })();
+/* a vehicle gate in the north wall: stone posts with lamps, two iron leaves standing open */
+function ironGate(pxa, pxb) {
+  const zg = Z(4), xa = X(pxa), xb = X(pxb), IRON = [0.13, 0.13, 0.14], lw = (xb - xa) / 2 - 0.3, n = Math.round(lw / 0.25);
+  [xa, xb].forEach(x => { box(XF(x, 0, zg), 0.6, 3.0, 0.6, ONE, { b: B.stone }); cyl(XF(x, 3.0, zg), 0.22, 0.16, 0.34, 8, [1.0, 0.95, 0.8], true, B.lamp); boxes.push([x - 0.4, zg - 0.4, x + 0.4, zg + 0.4]); });
+  [[xa + 0.3, 1], [xb - 0.3, -1]].forEach(g => {
+    const ry = g[1] > 0 ? -1.2 : 1.2 + Math.PI, f = XF(g[0], 0, zg + 0.2, ry);
+    for (let k = 0; k <= n; k++) box(f, 0.04, 2.4, 0.04, IRON, { off: [k * lw / n, 0.1, 0] });
+    [0.1, 1.3, 2.45].forEach(y => box(f, lw, 0.06, 0.05, IRON, { off: [lw / 2, y, 0] }));
+  });
+}
+ironGate(1582, 1618); ironGate(2387, 2423);
+const GATEX = [X(1600), X(2405)]; /* keep trees out of the way of these gates */
 const BOOTH = { x: X(792), z: Z(24) };
 (function () { /* side gate at Barn A: iron gate between two lamp posts, with the white guard booth */
   const zg = Z(4), xa = X(815), xb = X(847), IRON = [0.13, 0.13, 0.14];
@@ -1002,7 +1015,9 @@ chain('sS2', 'cafeN', 'cS2'); edge('cafeN', 'cafe');
 chain('cN2', 'e1', 'e2', 'e3', 'e4', 'e5', 'cS2'); edge('e2', 'mainA'); edge('e3', 'cM');
 chain('e1', 'n1', 'n2', 'sgate'); edge('n1', 'clubwc'); edge('n2', 'pry'); edge('clubwc', 'pry');
 node('eqp', 2032, 674, 'عند الطرف الشرقي لإسطبل C'); node('eqh', 2032, 716); chain('barnC', 'eqp', 'c1'); edge('eqp', 'eqh');
-node('lngN', 2186, 317); chain('e4', 'r1', 'r2', 'a6A', 'a6B', 'a6C', 'r3', 'barnC', 'c1', 'lngN', 'cE2', 'barnE'); chain('c1', 'c2', 'zb'); edge('a6B', 'jt'); edge('e2', 'club'); edge('r1', 'starsB');
+node('m1', 1505, 640); node('m2', 1505, 268, 'عند بوابة الميدان الرئيسي'); node('g1a', 1600, 268); node('gate1', 1600, 12);
+node('g2b', 2380, 249); node('g2a', 2405, 249); node('gate2', 2405, 12);
+node('lngN', 2186, 317); chain('e4', 'r1', 'r2', 'a6A', 'a6B', 'a6C', 'r3', 'barnC', 'c1', 'lngN', 'cE2', 'barnE'); chain('c1', 'c2', 'zb'); edge('a6B', 'jt'); chain('r3', 'm1', 'm2', 'g1a', 'gate1'); chain('cE2', 'g1a'); chain('barnE', 'g2b', 'g2a', 'gate2'); edge('e2', 'club'); edge('r1', 'starsB');
 chain('e5', 'l1', 'l2', 'l3'); edge('l1', 'starsA'); edge('l2', 'r2');
 chain('park', 'out0', 'shopW');
 node('wkr', 304, 812); edge('sS3', 'wkr');
@@ -1045,6 +1060,8 @@ const PLACES = [
   { id: 'sb', n: 'ميدان KRC Stars B', en: 'KRC Stars B', g: 'arena', nodes: ['starsB'], ph: [], lbl: [838, 712, 4] },
   { id: 'pavilion', n: 'جلسة الحديقة', en: 'Garden pavilion', g: 'other', nodes: ['pav'], face: [455, 500], ph: [P('pavilion')], note: 'في وسط الحديقة، أمامك مباشرة عند الخروج من الباب الخلفي للاستقبال.', lbl: [455, 500, 7.5] },
   { id: 'club', n: 'القاعة الزجاجية والمدرجات', en: 'Glass room and stands', g: 'other', nodes: ['club'], face: CLUBP.pav, ph: [P('club')], note: 'القاعة الزجاجية والمدرجات على الضلع المائل للميدان الرئيسي. دورات المياه تحتها والمصلى خلفها.', lbl: [CLUBP.pav[0], CLUBP.pav[1], 10.5] },
+  { id: 'gate1', n: 'البوابة الخلفية 1 · الميدان الرئيسي', en: 'Back gate 1, main arena', g: 'other', nodes: ['gate1'], face: [1600, 4], ph: [], note: 'بوابة في السور الخلفي، بين الميدان الرئيسي والميدان الكبير.', lbl: [1600, 8, 4.2] },
+  { id: 'gate2', n: 'البوابة الخلفية 2 · إسطبل E', en: 'Back gate 2, Barn E', g: 'other', nodes: ['gate2'], face: [2405, 4], ph: [], note: 'بوابة في السور الخلفي، على الطريق بجانب خيام إسطبل E.', lbl: [2405, 8, 4.2] },
   { id: 'gateA', n: 'البوابة الجانبية · إسطبل A', en: 'Side gate, Barn A', g: 'other', nodes: ['sgate'], face: [831, 4], ph: [P('gateA1'), P('gateA2')], note: 'البوابة الحديدية مع كشك الحارس الأبيض، في آخر الطريق بعد إسطبل A.', lbl: [831, 8, 4.2] },
   { id: 'judges', n: 'برج الحكام', en: 'Judges’ tower', g: 'other', nodes: ['jt'], face: [1268, 620], ph: [P('judges')], note: 'البرج ذو الطابقين بين الميدان الرئيسي وميدان 6.', lbl: [1268, 590, 9.5] },
   { id: 'walker', n: 'جهاز مشي الخيل · إسطبل B', en: 'Horse walker, Barn B', g: 'other', nodes: ['wkr'], face: [265, 849], ph: [P('walker')], note: 'خلف إسطبل B، مقابل دورة مياه الرجال.', lbl: [265, 849, 4.2] },
@@ -1078,6 +1095,8 @@ const NOTE_EN = {
   lunge: 'The round arena opposite Barn E. Not photographed yet.',
   pavilion: 'In the middle of the garden, straight ahead as you leave Reception by the back door.',
   club: 'The glass room and stands on the angled side of the main arena. The restrooms are underneath and the prayer room is behind.',
+  gate1: 'A gate in the back wall, between the main arena and the large arena.',
+  gate2: 'A gate in the back wall, on the road beside the Barn E tents.',
   gateA: 'The iron gate with the white guard booth, at the end of the road past Barn A.',
   judges: 'The two-storey tower between the main arena and Arena 6.',
   walker: 'Behind Barn B, opposite the men’s restroom.',
@@ -1094,7 +1113,7 @@ const AT_EN = {
   'عند نهاية إسطبل B': 'at the far end of Barn B', 'بعد إسطبل A': 'past Barn A', 'في آخر الطريق': 'at the end of the road',
   'عند ميدان KRC Stars B': 'at KRC Stars B', 'بعد إسطبل C': 'past Barn C', 'عند الحلقة الدائرية': 'at the round pen',
   'عند ميدان KRC Stars A': 'at KRC Stars A', 'بعد ميدان KRC Stars A': 'past KRC Stars A', 'عند السور البعيد': 'at the far wall',
-  'عند باب محل المستلزمات': 'at the tack shop door', 'عند الطرف الشرقي لإسطبل B': 'at the east end of Barn B', 'عند الطرف الشرقي لإسطبل C': 'at the east end of Barn C'
+  'عند باب محل المستلزمات': 'at the tack shop door', 'عند الطرف الشرقي لإسطبل B': 'at the east end of Barn B', 'عند الطرف الشرقي لإسطبل C': 'at the east end of Barn C', 'عند بوابة الميدان الرئيسي': 'at the main arena gate'
 };
 PLACES.forEach(p => { p.ne = NOTE_EN[p.id]; });
 const PBY = {}; PLACES.forEach(p => { PBY[p.id] = p; });
@@ -1204,7 +1223,7 @@ const listEl = $('list'), qEl = $('q'), fromEl = $('from'), tabsEl = $('tabs');
 function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
 const ico = n => '<svg class="ic" aria-hidden="true"><use href="#i-' + n + '"/></svg>';
 /* the icon shown in a place's bubble: a symbol from index.html, or short text such as WC */
-const PICON = { reception: 'bell', entrance: 'door', shop: 'bag', admin: 'building', cafe: 'coffee', tackB: 'bag', washB: 'drop', prayer: 'moon', outB: 'barn', pavilion: 'tree', club: 'building', gateA: 'gate', judges: 'tower', walker: 'rotate', walker2: 'rotate', lunge: 'rotate' };
+const PICON = { reception: 'bell', entrance: 'door', shop: 'bag', admin: 'building', cafe: 'coffee', tackB: 'bag', washB: 'drop', prayer: 'moon', outB: 'barn', pavilion: 'tree', club: 'building', gateA: 'gate', gate1: 'gate', gate2: 'gate', judges: 'tower', walker: 'rotate', walker2: 'rotate', lunge: 'rotate' };
 function placeIcon(p) { if (/^wc/.test(p.id)) return { t: 'WC' }; if (PICON[p.id]) return { i: PICON[p.id] }; return { i: p.g === 'barn' || p.box ? 'barn' : p.g === 'arena' ? 'flag' : 'pin' }; }
 function bubble(p) { const b = el('span', 'bub'), ic = placeIcon(p); if (ic.t) b.textContent = ic.t; else b.innerHTML = ico(ic.i); return b; }
 const AR_DIG = { '٠': 0, '١': 1, '٢': 2, '٣': 3, '٤': 4, '٥': 5, '٦': 6, '٧': 7, '٨': 8, '٩': 9 };
