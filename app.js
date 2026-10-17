@@ -1040,8 +1040,8 @@ const PLACES = [
   { id: 'tackB', n: 'غرفة السروج · إسطبل B', en: 'Tack room, Barn B', g: 'svc', nodes: ['tackB'], face: [786, 892], ph: [P('tackB1'), P('tackB2')], note: 'المبنى ذو الطابقين في الطرف الشرقي لإسطبل B، مقابل باب الإسطبل الطرفي.', lbl: [786, 908, 7.2] },
   { id: 'washB', n: 'مغسلة الخيل · إسطبل B', en: 'Horse wash bay, Barn B', g: 'svc', nodes: ['washB'], face: [757, 877], ph: [P('washB')], note: 'بين غرفة السروج وممر إسطبل B، في الطرف الشرقي.', lbl: [763, 872, 3.6] },
   { id: 'prayer', n: 'المصلى', en: 'Prayer room', g: 'svc', nodes: ['pry'], face: CLUBP.pryFace, ph: [P('prayer')], note: 'خلف القاعة الزجاجية. مبنى حجري منخفض له بابان.', lbl: [CLUBP.pryFace[0], CLUBP.pryFace[1], 4.4] },
-  { id: 'barnA', n: 'إسطبل A', en: 'Barn A', g: 'barn', nodes: ['barnA'], face: [dAx, 210], ph: [P('barnA')], note: 'الباب الرئيسي على الجهة الطويلة المقابلة لميدان 1 وميدان 2. أرقام البوكسات لم تُضَف بعد.', lbl: [561, 157, 10] },
-  { id: 'barnB', n: 'إسطبل B', en: 'Barn B', g: 'barn', nodes: ['barnB'], face: [dBx, 793], ph: [P('barnB')], note: 'الباب الرئيسي على الجهة الطويلة المقابلة لميدان 4 وميدان 3، وباب ثانٍ في الطرف الشرقي عند غرفة السروج. أرقام البوكسات لم تُضَف بعد.', lbl: [548, 849, 10] },
+  { id: 'barnA', n: 'إسطبل A', en: 'Barn A', g: 'barn', nodes: ['barnA'], face: [dAx, 210], ph: [P('barnA')], note: 'الباب الرئيسي على الجهة الطويلة المقابلة لميدان 1 وميدان 2. ابحث عن رقم البوكس مثل A-9.', lbl: [561, 157, 10] },
+  { id: 'barnB', n: 'إسطبل B', en: 'Barn B', g: 'barn', nodes: ['barnB'], face: [dBx, 793], ph: [P('barnB')], note: 'الباب الرئيسي على الجهة الطويلة المقابلة لميدان 4 وميدان 3، وباب ثانٍ في الطرف الشرقي عند غرفة السروج. ابحث عن رقم البوكس مثل B-17.', lbl: [548, 849, 10] },
   { id: 'barnD', n: 'إسطبل D', en: 'Barn D', g: 'barn', nodes: ['dn'], face: [255, 640], ph: [P('barnD')], note: 'ستة عشر بوكساً تحت المظلة المقوسة، على يمينك بعد الخروج من الباب الخلفي للاستقبال.', lbl: [255, 678, 6.5], boxes: 1 },
   { id: 'barnC', n: 'إسطبل C', en: 'Barn C', g: 'barn', nodes: ['barnC'], face: [dCx, 700], ph: [P('barnC')], note: 'الإسطبل الكبير في الخلف على اليمين. الباب الرئيسي على الجهة المقابلة للميادين، ودورات المياه بالداخل.', lbl: [1733, 795, 10] },
   { id: 'barnE', n: 'إسطبل E', en: 'Barn E', g: 'barn', nodes: ['barnE'], face: [2270, 246], ph: [], note: 'الخيام البيضاء الثلاث المتجاورة في الخلف على اليسار. أرقام البوكسات لم تُضَف بعد.', lbl: [2276, 150, 6.5] },
@@ -1084,8 +1084,8 @@ const NOTE_EN = {
   tackB: 'The two-storey building at the east end of Barn B, opposite the barn’s end door.',
   washB: 'Between the tack room and the Barn B aisle, at the east end.',
   prayer: 'Behind the glass room. A low stone building with two doors.',
-  barnA: 'The main door is on the long side facing Arena 1 and Arena 2. Box numbers are not added yet.',
-  barnB: 'The main door is on the long side facing Arena 4 and Arena 3, with a second door at the east end by the tack room. Box numbers are not added yet.',
+  barnA: 'The main door is on the long side facing Arena 1 and Arena 2. Search for a box number like A-9.',
+  barnB: 'The main door is on the long side facing Arena 4 and Arena 3, with a second door at the east end by the tack room. Search for a box number like B-17.',
   barnD: 'Sixteen boxes under the arched canopy, on your right as you leave Reception by the back door.',
   barnC: 'The large barn at the back on the right. The main door faces the arenas, and the restrooms are inside.',
   barnE: 'The three white tents side by side at the back on the left. Box numbers are not added yet.',
@@ -1120,6 +1120,85 @@ const PBY = {}; PLACES.forEach(p => { PBY[p.id] = p; });
 function boxPlace(num) {
   const b = DBOX[num]; if (!b) return null;
   return { id: 'D-' + num, n: 'بوكس D-' + num, en: 'Box D-' + num, g: 'Barn D', nodes: ['da' + b.k], face: [b.x / S + W / 2, b.z / S + H / 2], ph: num <= 2 ? [P('boxD'), P('barnD')] : [P('barnD')], box: num, note: 'إسطبل D، الصف ' + (b.sx > 0 ? 'الأيسر' : 'الأيمن') + ' وأنت داخل من جهة الاستقبال.', ne: 'Barn D, the ' + (b.sx > 0 ? 'left' : 'right') + ' row as you come in from the Reception end.' };
+}
+
+
+/* ---------- boxes inside Barns A, B and C, from the club's barn map (Sep 2026) ----------
+   Each plan is drawn with the east end at the top: in Barn B the walker and the cafeteria are at the bottom,
+   and they stand at the west end. Rows are listed top (east) to bottom (west); 0 is a door, wash room or
+   tack room. z is metres from the barn's centre line, north negative. Only numbers are used: the map is public. */
+const R = (a, b) => { const o = []; for (let i = a; a <= b ? i <= b : i >= b; i += a <= b ? 1 : -1) o.push(i); return o; };
+const INB = {
+  A: { info: barnA, total: 15.5, depth: 6.8, aisles: [{ z: 0 }],
+    rows: [{ z: -5.2, aisles: [0], ids: [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1] }, { z: 5.2, aisles: [0], ids: [14, 15, 16, 17, 18, 19, 0, 20, 21, 22, 23, 24, 25] }] },
+  B: { info: barnB, total: 17.5, depth: 3.7, aisles: [{ z: -3.7 }, { z: 3.7 }],
+    rows: [{ z: -7.4, aisles: [0], ids: [12, 11, 10, 9, 8, 7, 0, 6, 5, 4, 3, 2, 1] }, { z: 0, aisles: [0, 1], ids: R(13, 25) }, { z: 7.4, aisles: [1], ids: R(42, 26) }] },
+  C: { info: barnC, total: 24.5, depth: 4.6, aisles: [{ z: -7.3 }, { z: 7.3 }],
+    rows: [{ z: -12.15, aisles: [0], ids: [...R(20, 11), 0, 0, 0, 0, ...R(10, 1)] },
+      { z: -2.5, aisles: [0], ids: [...R(21, 28), 0, 0, 0, 0, 84, 0, 0, 0, ...R(29, 36)] },
+      { z: 0, aisles: [0, 1], ids: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 83] },
+      { z: 2.5, aisles: [1], ids: [...R(52, 45), 0, 0, 0, 0, 82, 0, 0, 0, ...R(44, 37)] },
+      { z: 12.15, aisles: [1], ids: [...R(53, 62), 0, 0, 0, 0, ...R(63, 72)] }] }
+};
+const pxOf = (x, z) => [x / S + W / 2, z / S + H / 2];
+/* doors: at the ends of the aisles, plus the side doors that are already on the path network */
+(function () {
+  const endNode = (id, b, ai, end) => { const I = INB[b].info, p = pxOf(I.cx + end * (I.w / 2 + 3.6), I.cz + INB[b].aisles[ai].z); node(id, p[0], p[1]); (INB[b].aisles[ai].doors = INB[b].aisles[ai].doors || []).push({ id, end }); };
+  const sideDoor = (id, b, ai, side) => (INB[b].aisles[ai].doors = INB[b].aisles[ai].doors || []).push({ id, side });
+  endNode('aE', 'A', 0, 1); endNode('aW', 'A', 0, -1); sideDoor('barnA', 'A', 0, 1); edge('aE', 'n1'); edge('aW', 'sst'); edge('aW', 'swc');
+  endNode('bE1', 'B', 0, 1); sideDoor('barnB', 'B', 0, -1); endNode('bE2', 'B', 1, 1); endNode('bW2', 'B', 1, -1); edge('bE1', 'bE'); edge('bE2', 'bE'); edge('bW2', 'sS3'); edge('bW2', 'wkr');
+  /* Barn C's east-end doors open on to Equine Home, so routes use the west ends and the north side door */
+  endNode('cW1', 'C', 0, -1); sideDoor('barnC', 'C', 0, -1); endNode('cW2', 'C', 1, -1); edge('cW1', 'r3'); edge('cW1', 'cW2');
+})();
+const BXS = {};
+Object.keys(INB).forEach(b => {
+  const I = INB[b].info, L = I.w / INB[b].total, xE = I.cx + I.w / 2;
+  INB[b].rows.forEach(row => row.ids.forEach((n, i) => {
+    if (!n) return; const x = xE - (0.25 + i + 0.5) * L, z = I.cz + row.z;
+    BXS[b + '-' + n] = { barn: b, num: n, row, slot: i, x, z, rect: [x - L / 2 + 0.1, z - INB[b].depth / 2, x + L / 2 - 0.1, z + INB[b].depth / 2] };
+  }));
+});
+/* B-43 to B-46 are the outdoor boxes beside Barn B's tack room */
+(function () { const x0 = X(800), bl = (X(915) - x0) / 5, z = (Z(906) + Z(919)) / 2; [43, 44, 45, 46].forEach((n, i) => { const x = x0 + (i + 0.5) * bl; BXS['B-' + n] = { barn: 'B', num: n, out: true, x, z, rect: [x - bl / 2 + 0.1, Z(906), x + bl / 2 - 0.1, Z(919)] }; }); })();
+function slotX(b, i) { const I = INB[b].info; return I.cx + I.w / 2 - (0.25 + i + 0.5) * I.w / INB[b].total; }
+function abcPlace(key) {
+  const x = BXS[key]; if (!x) return null; const I = INB[x.barn];
+  const nodes = x.out ? ['outB'] : [...new Set(x.row.aisles.flatMap(a => I.aisles[a].doors.map(d => d.id)))];
+  return { id: key, n: 'بوكس ' + key, en: 'Box ' + key, g: 'barn', nodes, bx: x, ph: [P('barn' + x.barn)],
+    note: x.out ? 'من البوكسات الخارجية بجانب غرفة سروج إسطبل B.' : 'داخل إسطبل ' + x.barn + '. المسار يوصلك لأقرب باب، وآخر خطوة تقول لك وين البوكس.',
+    ne: x.out ? 'One of the outdoor boxes beside the Barn B tack room.' : 'Inside Barn ' + x.barn + '. The route takes you to the nearest door, and the last step tells you where the box is.' };
+}
+const ORD = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
+/* the last step: which way to go inside the barn, which side the box is on, and how many boxes along */
+function insideStep(x, doorId) {
+  const key = x.barn + '-' + x.num;
+  if (x.out) return L('البوكس ' + key + ' في صف البوكسات الخارجية تحت السقف المسطح.', 'Box ' + key + ' is in the row of outdoor boxes under the flat roof.');
+  const I = INB[x.barn]; let door = null, aisle = null;
+  I.aisles.forEach(a => (a.doors || []).forEach(d => { if (d.id === doorId) { door = d; aisle = a; } }));
+  if (!door) return '';
+  const ids = x.row.ids, dX = X(N[doorId].x), hx = door.end ? -door.end : Math.sign(x.x - dX) || 1;
+  const right = (x.row.z - aisle.z) * hx > 0, between = i => door.end ? (door.end > 0 ? i <= x.slot : i >= x.slot) : (hx > 0 ? slotX(x.barn, i) <= x.x + 0.1 && slotX(x.barn, i) >= dX : slotX(x.barn, i) >= x.x - 0.1 && slotX(x.barn, i) <= dX);
+  const count = ids.filter((n, i) => n && between(i)).length, sideAr = right ? 'على يمينك' : 'على يسارك', sideEn = right ? 'on your right' : 'on your left';
+  if (door.end) return L('ادخل من الباب وامشِ في الممر. البوكس ' + key + ' ' + sideAr + '، وهو رقم ' + count + ' في الصف من جهة الباب.',
+    'Go in and walk down the aisle. Box ' + key + ' is ' + sideEn + ', the ' + ORD(count) + ' box in the row from the door.');
+  const hz = -door.side, turnR = hx * -hz > 0;
+  return L('ادخل من الباب الجانبي وانعطف ' + (turnR ? 'يميناً' : 'يساراً') + ' في الممر. البوكس ' + key + ' ' + sideAr + '، وهو رقم ' + count + ' من الباب.',
+    'Go in through the side door and turn ' + (turnR ? 'right' : 'left') + ' into the aisle. Box ' + key + ' is ' + sideEn + ', the ' + ORD(count) + ' box from the door.');
+}
+function stepsFor(path, target) {
+  if (!target.bx) return describe(path, target, fromName());
+  const x = target.bx, door = { n: x.out ? 'البوكسات الخارجية · إسطبل B' : 'باب إسطبل ' + x.barn, en: x.out ? 'the outdoor boxes, Barn B' : 'the Barn ' + x.barn + ' door' };
+  return describe(path, door, fromName()).concat([insideStep(x, path[path.length - 1])]);
+}
+/* the barn plan in the panel, laid out like the club's sheet: east at the top */
+function planABC(b, cur) {
+  const I = INB[b], w = el('div', 'plan bplan'), cap = el('div', 'plan-cap', L('مخطط إسطبل ' + b + ' كما في خريطة المركز، والطرف الشرقي فوق. اضغط على أي بوكس.', 'Barn ' + b + ' plan as on the club’s sheet, east end at the top. Tap any box.')); cap.dir = L('rtl', 'ltr'); w.appendChild(cap);
+  const g = el('div', 'bgrid'), cols = []; I.rows.forEach((r, i) => { if (r.ids.some(n => n)) cols.push({ r }); const nxt = I.rows[i + 1]; if (nxt && I.aisles.some(a => a.z > r.z && a.z < nxt.z)) cols.push({ aisle: 1 }); });
+  g.style.gridTemplateColumns = cols.map(c => c.aisle ? '8px' : '1fr').join(' ');
+  cols.forEach((c, ci) => { if (c.aisle) return; c.r.ids.forEach((n, ri) => { if (!n) return; const key = b + '-' + n, bt = el('button', null, String(n)); bt.type = 'button'; bt.setAttribute('data-bx', key); bt.setAttribute('aria-label', L('بوكس ', 'Box ') + key); bt.style.gridColumn = ci + 1; bt.style.gridRow = ri + 1; bt.addEventListener('click', () => goTo(abcPlace(key))); g.appendChild(bt); }); });
+  w.appendChild(g);
+  if (b === 'B') { const o = el('div', 'plan-row'); [43, 44, 45, 46].forEach(n => { const key = 'B-' + n, bt = el('button', null, String(n)); bt.type = 'button'; bt.setAttribute('data-bx', key); bt.addEventListener('click', () => goTo(abcPlace(key))); o.appendChild(bt); }); const c2 = el('div', 'plan-cap', L('البوكسات الخارجية', 'Outdoor boxes')); c2.dir = cap.dir; w.appendChild(c2); w.appendChild(o); }
+  return w;
 }
 
 function shortest(src, dsts) {
@@ -1191,6 +1270,7 @@ function pointAt(s) {
 function frameRoute() {
   const p = route.pts; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; p.forEach(q => { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); });
   if (route.barnD) { x0 = Math.min(x0, X(215)); x1 = Math.max(x1, X(295)); z1 = Math.max(z1, Z(762)); }
+  x0 = Math.min(x0, route.pin[0]); x1 = Math.max(x1, route.pin[0]); z0 = Math.min(z0, route.pin[1]); z1 = Math.max(z1, route.pin[1]);
   const pt = padTarget(), fw = Math.max(0.25, (cw - pt[0]) / cw), fh = Math.max(0.25, (PHONE.matches ? ch - Math.min(sheetH, ch * 0.62) - PHONE_TOP : ch - pt[1]) / ch), asp = cw / ch;
   /* look along whichever axis lets the camera come closest: on a tall phone screen a long route turns to run up it */
   const fit = (a, b) => Math.max((a + 60) / (0.82 * asp * fw), (b + 40) / (0.75 * fh)), dN = fit(x1 - x0, z1 - z0), dT = fit(z1 - z0, x1 - x0), turn = dT < dN * 0.9, d = turn ? dT : dN;
@@ -1211,7 +1291,9 @@ function goTo(target, keepView) {
   for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
   const end = path[path.length - 1], f = (target.faces && target.faces[end]) || target.face; let pin = f ? [X(f[0]), Z(f[1])] : pts[pts.length - 1];
   if (target.box) { const b = DBOX[target.box]; pin = [b.x, b.z]; }
-  route = { path, pts, cum, total: cum[cum.length - 1], target, steps: describe(path, target, fromName()), pin, box: target.box || 0, barnD: target.id === 'barnD' || !!target.box };
+  if (target.bx) pin = [target.bx.x, target.bx.z];
+  route = { path, pts, cum, total: cum[cum.length - 1], target, steps: stepsFor(path, target), pin, box: target.box || 0, barnD: target.id === 'barnD' || !!target.box,
+    rect: target.bx ? target.bx.rect : null, plan: target.bx ? target.bx.barn : ({ barnA: 'A', barnB: 'B', barnC: 'C' })[target.id] || null };
   curTarget = target; stopGuide(); renderResult(); markList();
   $('pin').textContent = nm(target); $('pin').hidden = false;
   if (PHONE.matches) { qEl.blur(); sheetTo('half'); }
@@ -1230,7 +1312,7 @@ const AR_DIG = { '٠': 0, '١': 1, '٢': 2, '٣': 3, '٤': 4, '٥': 5, '٦': 6, 
 function parseBox(s) { s = s.replace(/[٠-٩]/g, d => AR_DIG[d]); const m = /^\s*(?:box\s*|بوكس\s*)?([a-e])\s*[- ]?\s*(\d{1,2})\s*$/i.exec(s); return m ? { barn: m[1].toUpperCase(), num: +m[2] } : null; }
 function markList() {
   listEl.querySelectorAll('button[data-id]').forEach(b => { if (curTarget && b.getAttribute('data-id') === curTarget.id) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
-  document.querySelectorAll('.plan button').forEach(b => { if (curTarget && curTarget.box === +b.getAttribute('data-box')) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+  document.querySelectorAll('.plan button').forEach(b => { const on = curTarget && (b.hasAttribute('data-bx') ? curTarget.id === b.getAttribute('data-bx') : curTarget.box === +b.getAttribute('data-box')); if (on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
 }
 const CATS = [['svc', 'الخدمات', 'Services', 'bell'], ['barn', 'الإسطبلات', 'Barns', 'barn'], ['arena', 'الميادين', 'Arenas', 'flag'], ['other', 'أماكن أخرى', 'Other places', 'pin']]; let cat = 'svc';
 function itemBtn(p, label, sub) {
@@ -1246,10 +1328,13 @@ function renderList() {
   const q = qEl.value.trim().toLowerCase(), bx = parseBox(qEl.value); listEl.textContent = '';
   if (bx) {
     const wrap = el('div', 'grp');
+    const key = bx.barn + '-' + bx.num;
     if (bx.barn === 'D' && DBOX[bx.num]) wrap.appendChild(itemBtn(boxPlace(bx.num), L('بوكس D-', 'Box D-') + bx.num, L('إسطبل D', 'Barn D')));
+    else if (BXS[key]) wrap.appendChild(itemBtn(abcPlace(key), L('بوكس ', 'Box ') + key, L('إسطبل ', 'Barn ') + bx.barn));
     else if (bx.barn === 'D') wrap.appendChild(el('p', 'empty', L('إسطبل D فيه البوكسات من 1 إلى 16.', 'Barn D has boxes 1 to 16.')));
     else {
-      const pb = PBY['barn' + bx.barn];
+      const pb = PBY['barn' + bx.barn], MAXB = { A: 25, B: 46, C: 84 };
+      if (MAXB[bx.barn]) { wrap.appendChild(el('p', 'empty', L('إسطبل ' + bx.barn + ' فيه البوكسات من 1 إلى ' + MAXB[bx.barn] + '.', 'Barn ' + bx.barn + ' has boxes 1 to ' + MAXB[bx.barn] + '.'))); if (pb) wrap.appendChild(itemBtn(pb)); listEl.appendChild(wrap); tabsEl.hidden = true; return; }
       wrap.appendChild(el('p', 'empty', L('أرقام بوكسات إسطبل ' + bx.barn + ' لم تُضَف بعد.', 'Box numbers for Barn ' + bx.barn + ' are not added yet.') + (pb ? L(' يمكنك الذهاب إلى الإسطبل نفسه.', ' You can go to the barn itself.') : '')));
       if (pb) wrap.appendChild(itemBtn(pb));
     }
@@ -1283,7 +1368,7 @@ function renderResult() {
   chip('route', metres + L(' م', ' m')); chip('clock', L('حوالي ' + mins + ' د', 'about ' + mins + ' min')); chip(null, alt(t));
   const ol = $('resS'); ol.textContent = ''; route.steps.forEach(s => ol.appendChild(el('li', null, s)));
   $('resSum').textContent = L('الاتجاهات · ' + route.steps.length + ' خطوات', 'Directions · ' + route.steps.length + ' steps'); $('body').scrollTop = 0;
-  const d = $('resD'); d.textContent = ''; if (route.barnD) d.appendChild(planEl()); d.hidden = !route.barnD;
+  const d = $('resD'); d.textContent = ''; if (route.barnD) d.appendChild(planEl()); else if (route.plan) d.appendChild(planABC(route.plan)); d.hidden = !route.barnD && !route.plan;
   const p = $('resP'); p.textContent = ''; const ph = t.ph || [];
   ph.forEach(src => { const im = document.createElement('img'); im.src = src; im.alt = L('صورة: ', 'Photo: ') + nm(t); im.loading = 'lazy'; p.appendChild(im); });
   p.className = 'res-p' + (ph.length > 1 ? ' multi' : ''); p.hidden = !ph.length;
@@ -1304,7 +1389,7 @@ function buildFrom() {
   qEl.addEventListener('input', renderList);
   qEl.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return; e.preventDefault(); const bx = parseBox(qEl.value);
-    if (bx && bx.barn === 'D' && DBOX[bx.num]) { goTo(boxPlace(bx.num)); return; } const f = listEl.querySelector('button.item'); if (f) f.click();
+    if (bx && bx.barn === 'D' && DBOX[bx.num]) { goTo(boxPlace(bx.num)); return; } if (bx && BXS[bx.barn + '-' + bx.num]) { goTo(abcPlace(bx.barn + '-' + bx.num)); return; } const f = listEl.querySelector('button.item'); if (f) f.click();
   });
   $('resX').addEventListener('click', clearRoute);
   $('goWalk').addEventListener('click', startGuide);
@@ -1360,7 +1445,7 @@ function applyLang(lg) {
   [...tabsEl.children].forEach((b, i) => { b.lastChild.textContent = L(CATS[i][1], CATS[i][2]); });
   Object.keys(MODELS).forEach(k => { $('mc_' + k).textContent = chipText(k); });
   buildFrom(); renderList();
-  if (route) { route.steps = describe(route.path, route.target, fromName()); $('pin').textContent = nm(route.target); }
+  if (route) { route.steps = stepsFor(route.path, route.target); $('pin').textContent = nm(route.target); }
   renderResult(); LBL.forEach(nameLabel); setFold(folded);
   if (cw > 1) resize();
 }
@@ -1459,6 +1544,7 @@ function ribbon(a, c, pts, wd, y, col) {
 function disc(a, c, x, z, r, y, col) { for (let i = 0; i < 20; i++) { const a0 = i / 20 * 6.2832, a1 = (i + 1) / 20 * 6.2832; for (const v of [[x, y, z], [x + Math.cos(a0) * r, y, z + Math.sin(a0) * r], [x + Math.cos(a1) * r, y, z + Math.sin(a1) * r]]) { a.push(...v); c.push(...col); } } }
 function buildRoute(t) {
   const a = [], c = [], p = route.pts, wd = mode === 'walk' ? 1.0 : Math.min(5.5, Math.max(1.1, ob.dist * 0.013));
+  if (route.rect) { const r = route.rect; dq(a, c, [r[0], 0.06, r[3]], [r[2], 0.06, r[3]], [r[2], 0.06, r[1]], [r[0], 0.06, r[1]], BOXHL); }
   if (route.box) { const r = DBOX[route.box].rect; dq(a, c, [r[0], 0.06, r[3]], [r[2], 0.06, r[3]], [r[2], 0.06, r[1]], [r[0], 0.06, r[1]], BOXHL); }
   ribbon(a, c, p, wd * 1.5, 0.05, PALE); ribbon(a, c, p, wd, 0.06, TEAL);
   const sp = wd * 3.4; let s = noMotion ? sp / 2 : (t * wd * 1.5) % sp;
@@ -1540,7 +1626,7 @@ function frame2(now) {
   /* labels */
   const lim = mode === 'walk' ? 42 : ob.dist * 2.6 + 40, cand = [], placed = [];
   if (route) {
-    const pr = proj(new THREE.Vector3(route.pin[0], route.box ? 2.7 : 5, route.pin[1]));
+    const pr = proj(new THREE.Vector3(route.pin[0], route.box ? 2.7 : route.rect ? 7.5 : 5, route.pin[1]));
     if (pr[2] > 0 && Math.abs(pr[0]) < 1.1 && Math.abs(pr[1]) < 1.1) { const px = (pr[0] * 0.5 + 0.5) * cw, py = (-pr[1] * 0.5 + 0.5) * ch; pinEl.style.transform = 'translate(-50%,-100%) translate(' + px.toFixed(1) + 'px,' + (py - 8).toFixed(1) + 'px)'; if (pinEl.hidden) pinEl.hidden = false; placed.push({ sx: px, sy: py - 22, cw: pinEl.offsetWidth + 10 }); }
     else if (!pinEl.hidden) pinEl.hidden = true;
   }
