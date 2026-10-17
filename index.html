@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="light">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FBF8F1">
+<title>خريطة مركز الفروسية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: the 3D site fills the window. A floating ivory panel holds search, places and directions
+   (right side on desktop, a draggable bottom sheet on phones). Map controls float over the scene.
+   Palette: sand and brass, taken from the club itself: ivory plaster, sandstone, forest green, brass, terracotta roofs. */
+:root{
+  --map:#E6DBC5;
+  --surface:#FBF8F1; --surface-2:#F4EEE2; --surface-3:#ECE3D1;
+  --ink:#1E1A16; --muted:#6B5E4C; --faint:#978A74; --line:#E5DBC8; --line-2:#D5C7AC;
+  --accent:#23402F; --on-accent:#F6F1E7; --accent-soft:#E4E9E1; --accent-ink:#1B3325;
+  --brass:#A9824A; --brass-soft:#F2E7D3; --brass-ink:#5A4220;
+  --terra:#B9573D;
+  --hud:rgba(251,248,241,.94); --hud-ink:#1E1A16; --hud-muted:#6B5E4C; --hud-line:rgba(30,26,22,.10); --hud-on:#23402F; --hud-on-ink:#F6F1E7;
+  --shadow:0 1px 2px rgba(40,30,15,.08),0 10px 30px rgba(40,30,15,.14);
+  --shadow-sm:0 1px 2px rgba(40,30,15,.10),0 3px 10px rgba(40,30,15,.10);
+  --font:"IBM Plex Sans Arabic","Geeza Pro","Segoe UI",system-ui,-apple-system,sans-serif;
+  --sheet-w:384px; --gap:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --map:#1A1814; --surface:#1C1915; --surface-2:#24201B; --surface-3:#2C2822;
+    --ink:#F1EADB; --muted:#B3A68F; --faint:#877B67; --line:#332E27; --line-2:#433C32;
+    --accent:#C9A45C; --on-accent:#1C1915; --accent-soft:#2F2919; --accent-ink:#E8CD95;
+    --brass:#C9A45C; --brass-soft:#2F2919; --brass-ink:#E8CD95;
+    --hud:rgba(28,25,21,.92); --hud-ink:#F1EADB; --hud-muted:#B3A68F; --hud-line:rgba(255,255,255,.09); --hud-on:#C9A45C; --hud-on-ink:#1C1915;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35); --shadow-sm:0 1px 2px rgba(0,0,0,.3),0 3px 10px rgba(0,0,0,.25);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --map:#1A1814; --surface:#1C1915; --surface-2:#24201B; --surface-3:#2C2822;
+  --ink:#F1EADB; --muted:#B3A68F; --faint:#877B67; --line:#332E27; --line-2:#433C32;
+  --accent:#C9A45C; --on-accent:#1C1915; --accent-soft:#2F2919; --accent-ink:#E8CD95;
+  --brass:#C9A45C; --brass-soft:#2F2919; --brass-ink:#E8CD95;
+  --hud:rgba(28,25,21,.92); --hud-ink:#F1EADB; --hud-muted:#B3A68F; --hud-line:rgba(255,255,255,.09); --hud-on:#C9A45C; --hud-on-ink:#1C1915;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35); --shadow-sm:0 1px 2px rgba(0,0,0,.3),0 3px 10px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--map);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+[hidden]{display:none!important}
+.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+.app{position:fixed;inset:0}
+
+/* ---------- stage ---------- */
+.stage{position:absolute;inset:0;overflow:hidden;background:var(--map)}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline:none}
+.stage canvas:active{cursor:grabbing}
+.ui{position:absolute;inset:0;pointer-events:none}
+.ui>*{pointer-events:auto}
+.hud{background:var(--hud);color:var(--hud-ink);border:1px solid var(--hud-line);box-shadow:var(--shadow-sm);backdrop-filter:blur(10px) saturate(1.2);-webkit-backdrop-filter:blur(10px) saturate(1.2)}
+
+/* free map area = everything left of the panel on desktop */
+.ui{--free-l:0px;--free-r:calc(var(--sheet-w) + var(--gap) * 2)}
+[dir="ltr"] .ui{--free-l:calc(var(--sheet-w) + var(--gap) * 2);--free-r:0px}
+.app.folded .ui{--free-l:0px;--free-r:0px}
+.top{position:absolute;top:var(--gap);inset-inline-end:var(--gap);display:flex;gap:8px;align-items:center}
+.seg{display:flex;padding:3px;border-radius:12px;gap:2px}
+.seg button{display:flex;align-items:center;gap:6px;border:0;background:none;color:var(--hud-muted);padding:7px 12px;border-radius:9px;font-size:.86rem;font-weight:500;white-space:nowrap}
+.seg button:hover{color:var(--hud-ink)}
+.seg button[aria-pressed="true"]{background:var(--hud-on);color:var(--hud-on-ink)}
+.seg.icons button{padding:7px 9px}
+.tools{position:absolute;top:72px;inset-inline-end:var(--gap);display:flex;flex-direction:column;border-radius:12px;overflow:hidden}
+.tools button{width:42px;height:42px;display:grid;place-items:center;border:0;background:none;color:var(--hud-ink)}
+.tools button:hover{background:var(--surface-2)}
+.tools button+button{border-top:1px solid var(--hud-line)}
+.needle{display:block;width:12px;height:30px;position:relative;transition:transform .12s linear}
+.needle::before,.needle::after{content:"";position:absolute;left:0;border-inline:6px solid transparent}
+.needle::before{top:0;border-bottom:15px solid var(--terra)}
+.needle::after{bottom:0;border-top:15px solid var(--faint)}
+.stop{position:absolute;top:var(--gap);left:calc(var(--free-l) + (100% - var(--free-l) - var(--free-r)) / 2);transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:.9rem;box-shadow:var(--shadow)}
+.joy{position:absolute;inset-inline-end:calc(var(--gap) + 216px);bottom:var(--gap);width:112px;height:112px;border-radius:50%;touch-action:none}
+.joy i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:var(--hud-on);box-shadow:var(--shadow-sm)}
+.toast{position:absolute;left:calc(var(--free-l) + (100% - var(--free-l) - var(--free-r)) / 2);bottom:112px;transform:translateX(-50%);padding:9px 16px;border-radius:12px;font-size:.9rem;max-width:min(460px,calc(100% - var(--free-l) - var(--free-r) - 40px));text-align:center;pointer-events:none!important}
+.status{position:absolute;inset-inline-end:var(--gap);bottom:calc(var(--gap) + 82px);padding:4px 10px;border-radius:8px;font-size:.74rem;pointer-events:none!important;direction:ltr}
+.mini{position:absolute;inset-inline-end:var(--gap);bottom:var(--gap);width:200px;aspect-ratio:2796/979;padding:0;border-radius:12px;overflow:hidden;cursor:crosshair;display:block}
+.mini img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none;filter:saturate(.85) sepia(.12)}
+.mini i{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;will-change:transform}
+.mini i::before{content:"";position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;background:var(--terra);border:2px solid #FBF8F1;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.mini i::after{content:"";position:absolute;left:7px;top:-5px;border:5px solid transparent;border-left:10px solid #FBF8F1;border-right:0;filter:drop-shadow(0 0 1px rgba(0,0,0,.7))}
+.card{position:absolute;left:calc(var(--free-l) + (100% - var(--free-l) - var(--free-r)) / 2);bottom:var(--gap);transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px;padding-inline-end:12px;border-radius:16px;width:min(400px,calc(100% - var(--free-l) - var(--free-r) - 480px));min-width:300px;box-shadow:var(--shadow)}
+.card img{width:56px;height:56px;border-radius:11px;object-fit:cover;flex:none;background:var(--surface-3)}
+.card-t{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.35}
+.card-t b{font-weight:600;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-t small{font-size:.8rem;color:var(--hud-muted)}
+.card button{flex:none;display:flex;align-items:center;gap:6px;font-size:.86rem;font-weight:600;padding:9px 14px;border-radius:11px;border:0;background:var(--accent);color:var(--on-accent)}
+@media (max-width:1180px){.card{display:none}}
+.app.folded .card:not([hidden]){display:flex}
+.lang{font-weight:600!important;color:var(--hud-ink)!important;padding-inline:12px!important}
+
+/* loader */
+.loader{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--map);transition:opacity .5s ease}
+.loader.done{opacity:0;pointer-events:none}
+.loader img{width:84px;height:auto;background:#FBF8F1;border-radius:20px;padding:10px;box-shadow:var(--shadow)}
+.loader b{font-size:1.15rem;font-weight:600}
+.loader small{color:var(--muted);font-size:.85rem;margin-top:-10px}
+.bar{width:200px;height:4px;border-radius:4px;background:var(--line-2);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--brass);border-radius:4px;transition:width .3s ease}
+
+/* labels and destination pin on the model */
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;margin:0;display:flex;align-items:center;gap:6px;padding:3px;padding-inline-end:10px;border-radius:999px;font-size:.78rem;font-weight:500;line-height:1.3;white-space:nowrap;will-change:transform;border:1px solid var(--hud-line);background:var(--hud);color:var(--hud-ink);box-shadow:var(--shadow-sm)}
+button.lbl{pointer-events:auto;cursor:pointer}
+button.lbl:hover{background:var(--surface)}
+.lbl .bub{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);flex:none;font-size:9px;font-weight:700;letter-spacing:.02em}
+.lbl .bub .ic{width:13px;height:13px;stroke-width:2.2}
+.lbl.far{padding:3px}
+.lbl.far>span:not(.bub){display:none}
+.pin{position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;background:var(--terra);color:#FFF8EE;font-size:.88rem;font-weight:600;white-space:nowrap;box-shadow:0 4px 14px rgba(70,25,10,.35);will-change:transform}
+.pin::after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-7px;border:7px solid transparent;border-top-color:var(--terra);border-bottom:0}
+.fallback{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end}
+.fallback img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fallback p{position:relative;margin:12px;padding:8px 12px;border-radius:8px}
+
+/* ---------- panel ---------- */
+.sheet{position:absolute;z-index:10;top:var(--gap);bottom:var(--gap);inset-inline-start:var(--gap);width:var(--sheet-w);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
+.grab{display:none}
+.head{padding:16px 16px 12px;display:flex;flex-direction:column;gap:14px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand img{width:44px;height:auto;flex:none;background:#FBF8F1;border-radius:12px;padding:4px;border:1px solid var(--line)}
+.brand div{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.brand small{font-size:.72rem;color:var(--muted);letter-spacing:.02em}
+.brand h1{margin:0;font-size:1.12rem;font-weight:700}
+.brand{cursor:pointer}
+.fold{margin-inline-start:auto}
+.fold .ic{transform:rotate(180deg);transition:transform .2s}
+.sheet.collapsed{bottom:auto}
+.sheet.collapsed .body,.sheet.collapsed .tabs{display:none}
+.sheet.collapsed .fold .ic{transform:none}
+.search{position:relative}
+.search .ic{position:absolute;inset-inline-start:14px;top:50%;margin-top:-9px;color:var(--faint);pointer-events:none}
+.search input{width:100%;height:48px;font-size:1rem;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding-inline:44px 14px;outline:none;-webkit-appearance:none;appearance:none}
+.search input:focus{border-color:var(--brass);background:var(--surface);box-shadow:0 0 0 3px color-mix(in srgb,var(--brass) 22%,transparent)}
+.search input::placeholder{color:var(--faint)}
+.search input::-webkit-search-cancel-button{display:none}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{display:flex;align-items:center;gap:6px;flex:none;font-size:.86rem;font-weight:500;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.tabs button .ic{width:16px;height:16px}
+.tabs button:hover{color:var(--ink);border-color:var(--line-2)}
+.tabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.body{flex:1;min-height:0;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+
+/* result */
+.res{display:flex;flex-direction:column;gap:12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.res-p{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:16px}
+.res-p::-webkit-scrollbar{display:none}
+.res-p img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:16px;display:block;background:var(--surface-3);flex:none;scroll-snap-align:start}
+.res-p.multi img{width:86%}
+.res-h{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.res-h small{display:block;font-size:.72rem;font-weight:600;color:var(--brass);letter-spacing:.04em}
+.res-h h2{font-size:1.3rem;font-weight:700;margin:0;line-height:1.3}
+.icon-btn{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:50%;border:0;background:var(--surface-2);color:var(--muted)}
+.icon-btn:hover{background:var(--surface-3);color:var(--ink)}
+.res-meta{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-variant-numeric:tabular-nums}
+.chip .ic{width:14px;height:14px}
+.res-n{margin:0;color:var(--muted);font-size:.92rem}
+.res-b{display:grid;grid-template-columns:1fr auto;gap:8px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;font-size:.92rem;font-weight:600;padding:11px 14px;border-radius:13px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink)}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.from{display:flex;gap:10px;align-items:center;font-size:.86rem;color:var(--muted);background:var(--surface-2);border-radius:12px;padding:4px 4px 4px 4px;padding-inline-start:12px}
+.from select{font-size:.9rem;font-weight:500;color:var(--ink);background:transparent;border:0;border-radius:9px;padding:6px 8px;min-width:0;flex:1;outline:none}
+.steps summary{cursor:pointer;font-size:.92rem;font-weight:600;list-style:none;display:flex;align-items:center;gap:6px}
+.steps summary::-webkit-details-marker{display:none}
+.steps summary .ic{transition:transform .2s;width:16px;height:16px;color:var(--faint)}
+.steps[open] summary .ic{transform:rotate(180deg)}
+.steps ol{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;counter-reset:s;font-size:.92rem}
+.steps li{counter-increment:s;position:relative;padding-inline-start:36px;padding-block:6px;min-height:34px}
+.steps li::before{content:counter(s);position:absolute;inset-inline-start:0;top:5px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:.74rem;font-weight:600;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.steps li:not(:last-child)::after{content:"";position:absolute;inset-inline-start:11.5px;top:30px;bottom:-5px;width:1px;background:var(--line-2)}
+.steps li:first-child::before{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.steps li:last-child::before{background:var(--terra);border-color:var(--terra);color:#FFF8EE}
+.plan{display:flex;flex-direction:column;gap:5px;direction:ltr;background:var(--surface-2);border-radius:14px;padding:10px}
+.plan-cap{font-size:.78rem;color:var(--muted)}
+.plan-row{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
+.plan-row button{font-size:.8rem;font-variant-numeric:tabular-nums;padding:8px 0;border-radius:8px;border:1px solid var(--line-2);background:var(--brass-soft);color:var(--brass-ink)}
+.plan-row button:hover{border-color:var(--brass)}
+.plan-row button[aria-current]{background:var(--terra);border-color:var(--terra);color:#FFF8EE;font-weight:600}
+.plan-aisle{font-size:.7rem;letter-spacing:.14em;color:var(--faint);text-align:center;border-block:1px dashed var(--line-2);padding:1px 0}
+
+/* list */
+.grp{display:flex;flex-direction:column}
+.grp h3{font-size:.74rem;font-weight:600;letter-spacing:.04em;color:var(--brass);margin:8px 0 4px}
+.item{display:flex;align-items:center;gap:12px;text-align:start;padding:9px 8px;margin-inline:-8px;border-radius:12px;border:0;background:none;color:var(--ink)}
+.item .bub{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--brass-soft);color:var(--brass-ink);font-size:10px;font-weight:700}
+.item .txt{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.35}
+.item .txt span{font-size:.96rem;font-weight:500}
+.item .txt small{font-size:.76rem;color:var(--faint)}
+.app[dir="rtl"] .item .txt small{text-align:right}
+.app[dir="ltr"] .item .txt small{text-align:left}
+.item:hover{background:var(--surface-2)}
+.item[aria-current]{background:var(--accent-soft)}
+.item[aria-current] .bub{background:var(--accent);color:var(--on-accent)}
+.empty{margin:4px 0;font-size:.9rem;color:var(--muted)}
+.notes{margin-top:auto;border-top:1px solid var(--line);padding-top:12px;font-size:.84rem;color:var(--muted)}
+.notes summary{cursor:pointer;font-weight:600;color:var(--ink)}
+.notes ul{margin:8px 0 0;padding-inline-start:1.2em;display:flex;flex-direction:column;gap:4px}
+.models{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.models .chip.on{background:var(--accent-soft);color:var(--accent-ink)}
+
+/* ---------- phones: map full screen, the panel becomes a bottom sheet ---------- */
+@media (max-width:859px){
+  :root{--gap:12px}
+  .app[dir] .ui{--free-l:0px;--free-r:0px}
+  .fold{display:none}
+  .brand{cursor:default}
+  .sheet{top:auto;bottom:0;inset-inline:0;width:auto;height:var(--sh,154px);border-radius:22px 22px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom);transition:height .28s cubic-bezier(.2,.8,.2,1)}
+  .sheet.dragging{transition:none}
+  .grab{display:block;flex:none;height:22px;cursor:grab;touch-action:none;position:relative;border:0;background:none;width:100%}
+  .grab::before{content:"";position:absolute;left:50%;top:9px;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:var(--line-2)}
+  .head{padding-top:2px;gap:10px}
+  .brand{display:none}
+  .top{inset-inline:var(--gap);justify-content:space-between}
+  .seg button{padding:7px 10px}
+  .seg button .lbl-t{display:none}
+  .tools{top:64px}
+  .mini{top:64px;bottom:auto;inset-inline-end:auto;inset-inline-start:var(--gap);width:132px}
+  .stop{top:auto;bottom:calc(var(--sh,154px) + 12px)}
+  .joy{inset-inline-end:var(--gap);bottom:calc(var(--sh,154px) + 16px)}
+  .toast{bottom:calc(var(--sh,154px) + 70px);max-width:calc(100% - 24px)}
+  .status{bottom:auto;top:110px}
+  .lbl{font-size:.72rem}
+  .lbl .bub{width:20px;height:20px}
+}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .7-1.53l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-max" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-nav" viewBox="0 0 24 24"><path d="M3 11 22 2l-9 19-2-8z"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M3 6.5 9 3.5l6 3 6-3v14l-6 3-6-3-6 3z"/><path d="M9 3.5v14"/><path d="M15 6.5v14"/></symbol>
+  <symbol id="i-walk" viewBox="0 0 24 24"><circle cx="13" cy="4" r="1.6"/><path d="m9 21 2.5-6 2.5 2v4"/><path d="M8.5 11.5 10 8l3.5-1 2 3.5 2.5 1"/><path d="m11.5 15 1.5-5"/></symbol>
+  <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M12 2v7"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+  <symbol id="i-sunset" viewBox="0 0 24 24"><path d="M12 9V2"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m16 5-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M20 16a8 8 0 1 0-16 0v1h16z"/><path d="M12 4v4"/><path d="M10 4h4"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></symbol>
+  <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M6 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-barn" viewBox="0 0 24 24"><path d="M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11"/><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 1.13-1.8l7.95-3.98a2 2 0 0 1 1.84 0l7.95 3.98A2 2 0 0 1 22 8z"/><path d="M6 13h12"/><path d="M6 17h12"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-door" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></symbol>
+  <symbol id="i-tree" viewBox="0 0 24 24"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+  <symbol id="i-tower" viewBox="0 0 24 24"><path d="M8 22V9h8v13"/><path d="M6 9h12l-2-5H8z"/><path d="M5 22h14"/><path d="M11 13h2"/></symbol>
+  <symbol id="i-gate" viewBox="0 0 24 24"><path d="M4 22V6l2-2 2 2v16"/><path d="M16 22V6l2-2 2 2v16"/><path d="M8 9h8"/><path d="M8 15h8"/><path d="M12 9v6"/></symbol>
+</svg>
+
+<div class="app" id="app" dir="rtl" lang="ar">
+  <div class="stage" id="stage">
+    <canvas id="gl" data-lar="نموذج ثلاثي الأبعاد لمركز الكويت للفروسية" data-len="3D model of Kuwait Riding Center" aria-label="نموذج ثلاثي الأبعاد لمركز الكويت للفروسية"></canvas>
+    <div class="labels" id="labels"><div class="pin" id="pin" hidden></div></div>
+    <div class="ui" id="ui">
+      <div class="top">
+        <div class="seg hud" role="group" data-lar="طريقة العرض" data-len="View" aria-label="طريقة العرض">
+          <button type="button" id="mOrbit" aria-pressed="true"><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg><span class="lbl-t" data-ar="من الأعلى" data-en="Top view">من الأعلى</span></button>
+          <button type="button" id="mWalk" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-walk"/></svg><span class="lbl-t" data-ar="مشي" data-en="Walk">مشي</span></button>
+        </div>
+        <div class="seg icons hud" role="group" data-lar="وقت الإضاءة" data-len="Time of day" aria-label="وقت الإضاءة">
+          <button type="button" id="tMorning" aria-pressed="true" data-lar="صباح" data-len="Morning" aria-label="صباح" title="صباح"><svg class="ic" aria-hidden="true"><use href="#i-sunrise"/></svg></button>
+          <button type="button" id="tNoon" aria-pressed="false" data-lar="ظهر" data-len="Noon" aria-label="ظهر" title="ظهر"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></button>
+          <button type="button" id="tSunset" aria-pressed="false" data-lar="غروب" data-len="Sunset" aria-label="غروب" title="غروب"><svg class="ic" aria-hidden="true"><use href="#i-sunset"/></svg></button>
+        </div>
+        <div class="seg hud"><button type="button" id="lang" class="lang" lang="en">English</button></div>
+      </div>
+      <div class="tools hud">
+        <button type="button" id="north" data-lar="البوصلة، اضغط لمواجهة الشمال" data-len="Compass: tap to face north" aria-label="البوصلة، اضغط لمواجهة الشمال" title="البوصلة، اضغط لمواجهة الشمال"><span id="needle" class="needle"></span></button>
+        <button type="button" id="zIn" data-lar="تكبير" data-len="Zoom in" aria-label="تكبير" title="تكبير"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>
+        <button type="button" id="zOut" data-lar="تصغير" data-len="Zoom out" aria-label="تصغير" title="تصغير"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg></button>
+        <button type="button" id="home" data-lar="الموقع كاملاً" data-len="Whole site" aria-label="الموقع كاملاً" title="الموقع كاملاً"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg></button>
+        <button type="button" id="full" data-lar="ملء الشاشة" data-len="Full screen" aria-label="ملء الشاشة" title="ملء الشاشة"><svg class="ic" aria-hidden="true"><use href="#i-max"/></svg></button>
+      </div>
+      <button type="button" class="stop" id="stop" hidden><svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg><span data-ar="إيقاف المشي الموجّه" data-en="Stop guided walk">إيقاف المشي الموجّه</span></button>
+      <div class="joy hud" id="joy" hidden data-lar="عصا المشي" data-len="Walking joystick" aria-label="عصا المشي"><i id="knob"></i></div>
+      <div class="toast hud" id="toast" role="status" hidden></div>
+      <div class="card hud" id="card" hidden>
+        <img id="cardImg" alt="" width="56" height="56">
+        <div class="card-t"><b id="cardT"></b><small id="cardM"></small></div>
+        <button type="button" id="cardGo"><svg class="ic" aria-hidden="true"><use href="#i-nav"/></svg><span data-ar="ابدأ" data-en="Start">ابدأ</span></button>
+      </div>
+      <button type="button" class="mini hud" id="mini" data-lar="خريطة مصغّرة، اضغط للانتقال" data-len="Mini map: tap to jump there" aria-label="خريطة مصغّرة، اضغط للانتقال">
+        <img src="img/aerial.jpg" alt="" draggable="false"><i id="miniDot"></i>
+      </button>
+      <div class="status hud" id="loading" hidden></div>
+    </div>
+    <div class="loader" id="loader">
+      <img src="img/logo.png" alt="" width="84" height="68">
+      <b data-ar="مركز الكويت للفروسية" data-en="Kuwait Riding Center">مركز الكويت للفروسية</b>
+      <small data-ar="تجهيز المجسم ثلاثي الأبعاد" data-en="Preparing the 3D model">تجهيز المجسم ثلاثي الأبعاد</small>
+      <div class="bar"><i id="loaderBar"></i></div>
+    </div>
+  </div>
+
+  <aside class="sheet" id="sheet" data-lar="الأماكن" data-len="Places" aria-label="الأماكن">
+    <button type="button" class="grab" id="grab" data-lar="تكبير أو تصغير اللوحة" data-len="Resize the panel" aria-label="تكبير أو تصغير اللوحة"></button>
+    <div class="head">
+      <div class="brand" id="brand">
+        <img src="img/logo.png" alt="" width="44" height="36">
+        <div><small>Kuwait Riding Center · مركز الكويت للفروسية</small><h1 data-ar="خريطة المركز" data-en="Site map">خريطة المركز</h1></div>
+        <button type="button" class="icon-btn fold" id="fold" aria-expanded="true" data-lar="تصغير القائمة" data-len="Collapse the panel" aria-label="تصغير القائمة" title="تصغير القائمة"><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg></button>
+      </div>
+      <div class="search">
+        <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="q" type="search" autocomplete="off" enterkeyhint="search" placeholder="إلى أين؟ مكان أو بوكس مثل D-9" aria-label="ابحث عن مكان أو بوكس">
+      </div>
+      <div class="tabs" id="tabs" role="group" data-lar="نوع المكان" data-len="Type of place" aria-label="نوع المكان"></div>
+    </div>
+    <div class="body" id="body">
+      <section class="res" id="res" hidden>
+        <div class="res-p" id="resP" hidden></div>
+        <div class="res-h">
+          <div><small data-ar="الوجهة" data-en="Destination">الوجهة</small><h2 id="resT"></h2></div>
+          <button type="button" class="icon-btn" id="resX" data-lar="إلغاء المسار" data-len="Clear the route" aria-label="إلغاء المسار"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="res-meta" id="resM"></div>
+        <p class="res-n" id="resN"></p>
+        <div class="res-b">
+          <button type="button" class="btn primary" id="goWalk"><svg class="ic" aria-hidden="true"><use href="#i-nav"/></svg><span data-ar="ابدأ المسار" data-en="Start route">ابدأ المسار</span></button>
+          <button type="button" class="btn" id="goTop"><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg><span data-ar="من الأعلى" data-en="Top view">من الأعلى</span></button>
+        </div>
+        <label class="from" for="from"><span data-ar="من" data-en="From">من</span> <select id="from"></select></label>
+        <div id="resD" hidden></div>
+        <details class="steps" open><summary><span id="resSum"></span><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg></summary><ol id="resS"></ol></details>
+      </section>
+      <div id="list"></div>
+      <details class="notes">
+        <summary data-ar="عن هذه النسخة" data-en="About this version">عن هذه النسخة</summary>
+        <ul>
+          <li data-ar="الأرضية صورة جوية حقيقية للمركز، والمقاسات مأخوذة من طول ميدان 1 و2 (40 متراً)." data-en="The ground is a real aerial photo of the centre; the scale comes from Arenas 1 and 2 being 40 m long.">الأرضية صورة جوية حقيقية للمركز، والمقاسات مأخوذة من طول ميدان 1 و2 (40 متراً).</li>
+          <li data-ar="الأسقف ملوّنة من الصورة الجوية، وواجهات الحجر والأبواب واللوحات من صور المركز نفسها." data-en="Roofs take their colour from the aerial photo; stone walls, doors and signs come from photos of the centre.">الأسقف ملوّنة من الصورة الجوية، وواجهات الحجر والأبواب واللوحات من صور المركز نفسها.</li>
+          <li data-ar="ارتفاعات المباني ومسارات الجهة الشرقية بعد إسطبل C تقديرية." data-en="Building heights and the paths east of Barn C are estimates.">ارتفاعات المباني ومسارات الجهة الشرقية بعد إسطبل C تقديرية.</li>
+          <li data-ar="الخيل والنخيل والأشجار والحواجز وبرج الحكام وكشك الحارس نماذج واقعية مولّدة في Meshy." data-en="Horses, palms, trees, jumps, the judges’ tower and the guard booth are realistic models generated in Meshy.">الخيل والنخيل والأشجار والحواجز وبرج الحكام وكشك الحارس نماذج واقعية مولّدة في Meshy.</li>
+        </ul>
+        <div class="models" id="models"></div>
+      </details>
+    </div>
+  </aside>
+</div>
+
+<script>
+window.addEventListener('error',function(e){var l=document.getElementById('loading');if(l){l.hidden=false;l.textContent='خطأ: '+(e.message||(e.target&&e.target.src)||'تحميل')+' @'+(e.lineno||'');}},true);
+window.addEventListener('unhandledrejection',function(e){var l=document.getElementById('loading');if(l){l.hidden=false;l.textContent='خطأ: '+(e.reason&&e.reason.message||e.reason);}});
+</script>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module" src="app.js"></script>
