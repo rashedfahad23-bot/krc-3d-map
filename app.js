@@ -63,7 +63,7 @@ mk('pbark', { wm: [1.1, 2.2], tex: 'bark', opt: 'palm' }); mk('pfrond', { alpha:
 mk('jcol', { tex: null, opt: 'jump' });
 mk('bcol', { tex: null, opt: 'booth' });
 mk('apron', { tex: 'pave' });
-mk('glass', { tex: null }); mk('lamp', { tex: null }); mk('amb', { tex: null });
+mk('glass', { tex: null }); mk('lamp', { tex: null }); mk('amb', { tex: null }); mk('blabel', { tex: null }); mk('ceil', { tex: null });
 mk('tbark', { wm: [1.1, 2.2], tex: 'bark', opt: 'tree' }); mk('tleaf', { alpha: 1, tex: 'leaf', opt: 'tree' });
 
 function norm3(v) { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
@@ -110,15 +110,18 @@ function box(f, w, h, d, col, o = {}) {
   face('-z', P(hw, 0, -hd), P(-hw, 0, -hd), P(-hw, h, -hd), P(hw, h, -hd), sd && sd.rz);
   if (!o.noTop) quad(o.topB || (o.b && o.b !== B.stone ? o.b : B.col), P(-hw, h, hd), P(hw, h, hd), P(hw, h, -hd), P(-hw, h, -hd), o.top || (o.b ? FLAT : col), ctr);
 }
-function hip(f, w, d, h, col, b) {
+function hip(f, w, d, h, col, b, ring) {
   b = b || B.roof; const hw = w / 2, hd = d / 2, A = f([-hw, 0, -hd]), Bq = f([hw, 0, -hd]), Cq = f([hw, 0, hd]), D = f([-hw, 0, hd]), ctr = f([0, -1, 0]); let R1, R2;
   const t = (p, q, r) => tri(b, p, q, r, col, null, null, null, ctr);
   if (w >= d) { R1 = f([-hw + hd, h, 0]); R2 = f([hw - hd, h, 0]); t(A, Bq, R2); t(A, R2, R1); t(Cq, D, R1); t(Cq, R1, R2); t(Bq, Cq, R2); t(D, A, R1); }
   else { R1 = f([0, h, -hd + hw]); R2 = f([0, h, hd - hw]); t(Bq, Cq, R2); t(Bq, R2, R1); t(D, A, R1); t(D, R1, R2); t(A, Bq, R1); t(Cq, D, R2); }
   const e = 0.22, A2 = f([-hw, -e, -hd]), B2 = f([hw, -e, -hd]), C2 = f([hw, -e, hd]), D2 = f([-hw, -e, hd]), dk = [0.60, 0.25, 0.17], c2 = f([0, 0, 0]); /* red-painted fascia, as on the barns */
   quad(B.col, A2, B2, Bq, A, dk, c2); quad(B.col, B2, C2, Cq, Bq, dk, c2); quad(B.col, C2, D2, D, Cq, dk, c2); quad(B.col, D2, A2, A, D, dk, c2);
-  /* wooden soffit under the eave, like the barns in the photos */
-  quad(B.col, D2, C2, B2, A2, [0.40, 0.24, 0.14], f([0, 5, 0]));
+  /* wooden soffit under the eave, like the barns in the photos; a hollow building only gets the ring under the overhang */
+  const SOF = [0.40, 0.24, 0.14];
+  if (!ring) quad(B.col, D2, C2, B2, A2, SOF, f([0, 5, 0]));
+  else { const ix = hw - ring, iz = hd - ring, a = f([-ix, -e, -iz]), bq = f([ix, -e, -iz]), c = f([ix, -e, iz]), dq2 = f([-ix, -e, iz]), up = f([0, 5, 0]);
+    quad(B.col, A2, B2, bq, a, SOF, up); quad(B.col, B2, C2, c, bq, SOF, up); quad(B.col, C2, D2, dq2, c, SOF, up); quad(B.col, D2, A2, a, dq2, SOF, up); }
 }
 function cyl(f, rt, rb, h, n, col, cap, b) {
   b = b || B.col; const ctr = f([0, h / 2, 0]), top = f([0, h, 0]);
@@ -195,17 +198,18 @@ function bld(x0, z0, x1, z1, o = {}) {
 }
 function shed(x0, z0, x1, z1, h) { bld(x0, z0, x1, z1, { wall: h || 4.5, roof: 1.4, wb: B.metal, rb: B.metal, rc: mulc(ONE, 0.92), over: 0.2 }); }
 /* a stable barn: the aerial outline is the roof edge, so the walls sit in from it under a wide eave */
-function barn(x0, z0, x1, z1) {
+function barn(x0, z0, x1, z1, tag) {
   const OV = 2.4, wt = (x1 - x0) * S, dt = (z1 - z0) * S, w = wt - 2 * OV, d = dt - 2 * OV, cx = X((x0 + x1) / 2), cz = Z((z0 + z1) / 2), wall = 4.2, rh = 2.6, base = wall - OV * rh / (dt / 2);
   apron(x0 - 10, z0 - 10, x1 + 10, z1 + 10);
   const nb = Math.max(1, Math.round(w / 4)), bw = w / nb;
-  box(XF(cx, 0, cz), w, wall, d, ONE, { b: B.stone, side: { b: B.bay, only: ['+z', '-z'], rz: nb } });
-  hip(XF(cx, base, cz), wt, dt, rh, ONE);
+  /* walls and the inside come later (buildInterior); the roof goes in its own set so it can be lifted off */
+  REDIR = 'roof' + tag;
+  hip(XF(cx, base, cz), wt, dt, rh, ONE, null, OV);
   const cd = dt * 0.40, cw = wt - dt * 0.78, by = base + rh * (1 - cd / dt);
   box(XF(cx, by - 0.3, cz), cw, 1.4, cd, [0.40, 0.35, 0.30]);
   hip(XF(cx, by + 1.1, cz), cw + 1.8, cd + 1.8, 1.4, mulc(ONE, 0.95));
+  REDIR = null;
   /* the eave is cantilevered: no posts along the long sides (Rashed: the real barns have none) */
-  boxes.push([cx - w / 2, cz - d / 2, cx + w / 2, cz + d / 2]);
   return { cx, cz, w, d, bw, nb, wall };
 }
 function bayX(info, pxAerial) { const lx = X(pxAerial) - info.cx, k = Math.min(info.nb - 1, Math.max(0, Math.round((lx + info.w / 2) / info.bw - 0.5))); return info.cx - info.w / 2 + (k + 0.5) * info.bw; }
@@ -232,7 +236,7 @@ function endDoor(info, end, zw, batch) {
 }
 
 /* ---------- barns A, B and C ---------- */
-const barnA = barn(329, 89, 793, 225), barnB = barn(324, 777, 771, 921), barnC = barn(1453, 690, 2013, 900);
+const barnA = barn(329, 89, 793, 225, 'A'), barnB = barn(324, 777, 771, 921, 'B'), barnC = barn(1453, 690, 2013, 900, 'C');
 const doorAx = porch(barnA, 1, 597, B.doorA), doorBx = porch(barnB, -1, 596, B.doorB);
 pots(barnA, 1, doorAx); pots(barnB, -1, doorBx);
 const doorCx = porch(barnC, -1, 1745, B.doorCC); pots(barnC, -1, doorCx);
@@ -298,6 +302,72 @@ function endQuad(info, end, zpx, wd, y0, y1, b, col, rep, off) {
   }
   boxes.push([X(ox0), zf - 0.1, X(ox1), zb]);
 })();
+
+const R = (a, b) => { const o = []; for (let i = a; a <= b ? i <= b : i >= b; i += a <= b ? 1 : -1) o.push(i); return o; };
+const INB = {
+  A: { info: barnA, total: 15.5, depth: 6.8, aisles: [{ z: 0 }],
+    rows: [{ z: -5.2, aisles: [0], ids: [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1] }, { z: 5.2, aisles: [0], ids: [14, 15, 16, 17, 18, 19, 0, 20, 21, 22, 23, 24, 25] }] },
+  B: { info: barnB, total: 17.5, depth: 3.7, aisles: [{ z: -3.7 }, { z: 3.7 }],
+    rows: [{ z: -7.4, aisles: [0], ids: [12, 11, 10, 9, 8, 7, 0, 6, 5, 4, 3, 2, 1] }, { z: 0, aisles: [0, 1], ids: R(13, 25) }, { z: 7.4, aisles: [1], ids: R(42, 26) }] },
+  C: { info: barnC, total: 24.5, depth: 4.6, aisles: [{ z: -7.3 }, { z: 7.3 }],
+    rows: [{ z: -12.15, aisles: [0], ids: [...R(20, 11), 0, 0, 0, 0, ...R(10, 1)] },
+      { z: -2.5, aisles: [0], ids: [...R(21, 28), 0, 0, 0, 0, 84, 0, 0, 0, ...R(29, 36)] },
+      { z: 0, aisles: [0, 1], ids: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 83], draw: false },
+      { z: 2.5, aisles: [1], ids: [...R(52, 45), 0, 0, 0, 0, 82, 0, 0, 0, ...R(44, 37)] },
+      { z: 12.15, aisles: [1], ids: [...R(53, 62), 0, 0, 0, 0, ...R(63, 72)] }] }
+};
+
+/* ---------- inside Barns A, B and C, from the barn map and the photo of Barn C's aisle ----------
+   Hollow stone walls with openings at the aisle ends and the side door, interlock pavers in the aisles,
+   box fronts of galvanised bars between rounded sandstone pillars, and a number plate on each box.
+   The maroon ceiling, beams and duct belong to the roof set, so the inside shows from above when it is lifted. */
+const PLATES = [];
+function plate(key, x, z, s) {
+  let i = PLATES.indexOf(key); if (i < 0) { i = PLATES.length; PLATES.push(key); }
+  const c = i % 16, r = Math.floor(i / 16), u0 = c / 16, u1 = (c + 1) / 16, v1 = 1 - r / 12, v0 = 1 - (r + 1) / 12, hw = 0.19, y0 = 1.5, y1 = 1.69, ctr = [x, y0, z - s];
+  if (s > 0) quadUV(B.blabel, [x - hw, y0, z], [x + hw, y0, z], [x + hw, y1, z], [x - hw, y1, z], ONE, ctr, u0, v0, u1, v1);
+  else quadUV(B.blabel, [x + hw, y0, z], [x - hw, y0, z], [x - hw, y1, z], [x + hw, y1, z], ONE, ctr, u0, v0, u1, v1);
+}
+function buildInterior(b, sideDoors) {
+  const I = INB[b], info = I.info, cx = info.cx, cz = info.cz, w = info.w, d = info.d, wall = info.wall, t = 0.3, xW = cx - w / 2, xE = cx + w / 2, zN = cz - d / 2, zS = cz + d / 2, L = w / I.total;
+  const GALV = [0.64, 0.66, 0.67], SHAV = [0.78, 0.67, 0.48], AISLES = I.aisles.map(a => cz + a.z);
+  /* facade: the photo texture of the bays, on the outside face only */
+  quad(B.bay, [xW, 0, zS + 0.012], [xE, 0, zS + 0.012], [xE, wall, zS + 0.012], [xW, wall, zS + 0.012], ONE, [cx, 2, cz], info.nb);
+  quad(B.bay, [xE, 0, zN - 0.012], [xW, 0, zN - 0.012], [xW, wall, zN - 0.012], [xE, wall, zN - 0.012], ONE, [cx, 2, cz], info.nb);
+  const slabX = (xa, xb, z) => { if (xb - xa < 0.2) return; box(XF((xa + xb) / 2, 0, z), xb - xa, wall, t, ONE, { b: B.stone }); boxes.push([xa, z - t / 2, xb, z + t / 2]); };
+  const slabZ = (za, zb, x) => { if (zb - za < 0.2) return; box(XF(x, 0, (za + zb) / 2), t, wall, zb - za, ONE, { b: B.stone }); boxes.push([x - t / 2, za, x + t / 2, zb]); };
+  [[zN + t / 2, -1], [zS - t / 2, 1]].forEach(([z, side]) => { let xa = xW; sideDoors.filter(q => q.side === side).map(q => q.x).sort((p, q) => p - q).forEach(g => { slabX(xa, g - 1.3, z); xa = g + 1.3; }); slabX(xa, xE, z); });
+  [xW + t / 2, xE - t / 2].forEach(x => { let za = zN; AISLES.forEach(az => { slabZ(za, az - 1.6, x); za = az + 1.6; }); slabZ(za, zS, x); });
+  /* ceiling, beams and the AC duct over each aisle: lifted off with the roof */
+  REDIR = 'roof' + b;
+  quad(B.ceil, [xW, wall - 0.1, zN], [xE, wall - 0.1, zN], [xE, wall - 0.1, zS], [xW, wall - 0.1, zS], [0.66, 0.34, 0.36], [cx, wall + 9, cz]);
+  for (let x = xW + 3; x < xE - 1; x += 6) box(XF(x, wall - 0.65, cz), 0.25, 0.5, d - 0.4, [0.72, 0.3, 0.32], { b: B.ceil });
+  AISLES.forEach(az => box(XF(cx, wall - 0.75, az), w - 2, 0.45, 0.7, [0.86, 0.86, 0.84]));
+  REDIR = null;
+  AISLES.forEach(az => quad(B.apron, [xW, 0.05, az + 1.7], [xE, 0.05, az + 1.7], [xE, 0.05, az - 1.7], [xW, 0.05, az - 1.7], PAVE, [0, -9, 0]));
+  I.rows.forEach(row => {
+    if (row.draw === false) return;
+    const z0 = cz + row.z - I.depth / 2, z1 = cz + row.z + I.depth / 2, n = row.ids.length, xr0 = xE - 0.25 * L, xl0 = xr0 - n * L;
+    const fronts = row.aisles.map(ai => cz + I.aisles[ai].z > cz + row.z ? { z: z1, s: 1 } : { z: z0, s: -1 });
+    boxes.push([xl0, z0, xr0, z1]);
+    /* a row with one open side and the other not against the barn wall gets a back wall (Barn C's middle block) */
+    [[z0, -1], [z1, 1]].forEach(([z, s]) => { if (!fronts.some(f => f.s === s) && Math.abs(z - zN) > 0.6 && Math.abs(z - zS) > 0.6) box(XF((xl0 + xr0) / 2, 0, z), xr0 - xl0, 2.8, 0.18, ONE, { b: B.stone }); });
+    row.ids.forEach((num, i) => {
+      const xr = xr0 - i * L, xl = xr - L, xm = (xl + xr) / 2;
+      box(XF(xr, 0, (z0 + z1) / 2), 0.16, 2.7, z1 - z0, ONE, { b: B.stone }); if (i === n - 1) box(XF(xl, 0, (z0 + z1) / 2), 0.16, 2.7, z1 - z0, ONE, { b: B.stone });
+      if (num) quad(B.col, [xl, 0.045, z1], [xr, 0.045, z1], [xr, 0.045, z0], [xl, 0.045, z0], SHAV, [xm, -5, (z0 + z1) / 2]);
+      fronts.forEach(f => {
+        if (!num) { box(XF(xm, 0, f.z), L, 2.8, 0.2, ONE, { b: B.stone }); return; }
+        const nb = Math.max(6, Math.round((L - 0.5) / 0.16));
+        for (let k = 0; k <= nb; k++) box(XF(xl + 0.25 + k * (L - 0.5) / nb, 0.1, f.z), 0.035, 2.45, 0.035, GALV);
+        [0.12, 1.24, 1.36, 2.55].forEach(y => box(XF(xm, y, f.z), L - 0.4, 0.05, 0.06, GALV));
+        [xl, xr].forEach(x => box(XF(x, 0, f.z), 0.42, 2.8, 0.42, ONE, { b: B.stone }));
+        plate(b + '-' + num, xr - 0.48, f.z + f.s * 0.05, f.s);
+      });
+    });
+  });
+}
+buildInterior('A', [{ side: 1, x: doorAx }]); buildInterior('B', [{ side: -1, x: doorBx }]); buildInterior('C', [{ side: -1, x: doorCx }]);
 
 /* ---------- main entrance: Reception in the middle, a vehicle gate and a tower each side ---------- */
 (function () {
@@ -717,6 +787,13 @@ const frondCanvas = (function () {
   }
   g.strokeStyle = '#8f9460'; ln(g, 32, h, 32, 6, 2.6); ln(k, 32, h, 32, 6, 3.2); return rgbaTex(c, m);
 })();
+/* number plates for the boxes in Barns A, B and C, one cell each in a 16 x 12 atlas */
+const plateCanvas = (function () {
+  const c = cv(1024, 384), g = c.getContext('2d'); g.fillStyle = '#F4F2EC'; g.fillRect(0, 0, 1024, 384);
+  g.fillStyle = '#1E1A16'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 22px "Helvetica Neue",Arial,sans-serif';
+  PLATES.forEach((k, i) => { const x = (i % 16) * 64, y = Math.floor(i / 16) * 32; g.strokeStyle = '#9A8C76'; g.lineWidth = 2; g.strokeRect(x + 2, y + 2, 60, 28); g.fillText(k, x + 32, y + 17); });
+  return c;
+})();
 /* ambulance side panel: red band, star of life, the word in Arabic and English */
 const ambCanvas = (function () {
   const c = cv(512, 128), g = c.getContext('2d');
@@ -778,10 +855,13 @@ MAT.apron = std({ map: T.pave, normalMap: T.paveN, normalScale: new THREE.Vector
 MAT.lamp = std({ emissive: new THREE.Color(0xfff2d6), emissiveIntensity: 0.0, roughness: 0.3 });
 MAT.glass = std({ roughness: 0.06, metalness: 0.65, envMapIntensity: 1.4 });
 MAT.amb = std({ map: canvasTex(ambCanvas, false), roughness: 0.4 });
+/* the barn ceilings face down and get only the sand-coloured bounce, so they glow a little, like daylight from the high windows */
+MAT.ceil = std({ emissive: new THREE.Color(0x3a1a1c), roughness: 0.8 });
+MAT.blabel = std({ map: canvasTex(plateCanvas, false), roughness: 0.5 });
 ORDER.forEach(n => { const b = B[n]; if (!MAT[n] && b.file && b.base === n) MAT[n] = std({ map: tex(b.file, b.rs, b.rt), roughness: n === 'dbox' || n === 'bay' ? 0.6 : 0.82 }); });
 
 ORDER.forEach(n => { const b = B[n]; if (!MAT[n] && b.base !== n && MAT[b.base]) MAT[n] = MAT[b.base]; });
-const MESH = {};
+const MESH = {}; const ROOFSET = { A: [], B: [], C: [] }; let roofOpen = null;
 const linear = c => c <= 0 ? 0 : (c <= 1 ? Math.pow(c, 2.2) : c);
 ORDER.forEach(n => {
   const b = B[n]; if (!b.a.length || !MAT[n]) return;
@@ -799,7 +879,7 @@ ORDER.forEach(n => {
   const m = new THREE.Mesh(g, MAT[n]); m.castShadow = n !== 'apron'; m.receiveShadow = true; m.matrixAutoUpdate = false; m.renderOrder = 2;
   if (MAT[n].alphaTest) m.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: MAT[n].map, alphaTest: 0.4 });
   if (n === 'apron') m.renderOrder = 0;
-  scene.add(m); MESH[n] = m;
+  scene.add(m); MESH[n] = m; { const o = b.opt; if (o && /^roof[ABC]$/.test(o)) ROOFSET[o[4]].push(m); }
 });
 
 /* ---------- ground: the aerial photo, with real materials blended in near the camera ---------- */
@@ -1127,19 +1207,6 @@ function boxPlace(num) {
    Each plan is drawn with the east end at the top: in Barn B the walker and the cafeteria are at the bottom,
    and they stand at the west end. Rows are listed top (east) to bottom (west); 0 is a door, wash room or
    tack room. z is metres from the barn's centre line, north negative. Only numbers are used: the map is public. */
-const R = (a, b) => { const o = []; for (let i = a; a <= b ? i <= b : i >= b; i += a <= b ? 1 : -1) o.push(i); return o; };
-const INB = {
-  A: { info: barnA, total: 15.5, depth: 6.8, aisles: [{ z: 0 }],
-    rows: [{ z: -5.2, aisles: [0], ids: [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1] }, { z: 5.2, aisles: [0], ids: [14, 15, 16, 17, 18, 19, 0, 20, 21, 22, 23, 24, 25] }] },
-  B: { info: barnB, total: 17.5, depth: 3.7, aisles: [{ z: -3.7 }, { z: 3.7 }],
-    rows: [{ z: -7.4, aisles: [0], ids: [12, 11, 10, 9, 8, 7, 0, 6, 5, 4, 3, 2, 1] }, { z: 0, aisles: [0, 1], ids: R(13, 25) }, { z: 7.4, aisles: [1], ids: R(42, 26) }] },
-  C: { info: barnC, total: 24.5, depth: 4.6, aisles: [{ z: -7.3 }, { z: 7.3 }],
-    rows: [{ z: -12.15, aisles: [0], ids: [...R(20, 11), 0, 0, 0, 0, ...R(10, 1)] },
-      { z: -2.5, aisles: [0], ids: [...R(21, 28), 0, 0, 0, 0, 84, 0, 0, 0, ...R(29, 36)] },
-      { z: 0, aisles: [0, 1], ids: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 83] },
-      { z: 2.5, aisles: [1], ids: [...R(52, 45), 0, 0, 0, 0, 82, 0, 0, 0, ...R(44, 37)] },
-      { z: 12.15, aisles: [1], ids: [...R(53, 62), 0, 0, 0, 0, ...R(63, 72)] }] }
-};
 const pxOf = (x, z) => [x / S + W / 2, z / S + H / 2];
 /* doors: at the ends of the aisles, plus the side doors that are already on the path network */
 (function () {
@@ -1288,6 +1355,11 @@ function goTo(target, keepView) {
   if (!target || !target.nodes) return;
   const src = fromNode(), path = shortest(src, target.nodes); if (!path) return;
   const pts = path.map(id => [X(N[id].x), Z(N[id].z)]), cum = [0];
+  if (target.bx && !target.bx.out) {
+    const x = target.bx, I = INB[x.barn]; let door = null, aisle = null;
+    I.aisles.forEach(a => (a.doors || []).forEach(dd => { if (dd.id === path[path.length - 1]) { door = dd; aisle = a; } }));
+    if (door) { const az = I.info.cz + aisle.z, lp = pts[pts.length - 1]; pts.push(door.end ? [I.info.cx + door.end * (I.info.w / 2 - 1), az] : [lp[0], az], [x.x, az]); }
+  }
   for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
   const end = path[path.length - 1], f = (target.faces && target.faces[end]) || target.face; let pin = f ? [X(f[0]), Z(f[1])] : pts[pts.length - 1];
   if (target.box) { const b = DBOX[target.box]; pin = [b.x, b.z]; }
@@ -1621,6 +1693,7 @@ function frame2(now) {
   scene.fog.density = mode === 'orbit' ? 0.0011 * Math.min(1, 320 / ob.dist) : 0.0011; /* thinner haze when pulled far back */
   if (route) { buildRoute(now / 1000); routeMesh.visible = true; } else routeMesh.visible = false;
   if (MESH.droof) MESH.droof.visible = !(route && route.barnD && mode === 'orbit');
+  { const open = route && route.plan && mode === 'orbit' ? route.plan : null; if (open !== roofOpen) { roofOpen = open; for (const k in ROOFSET) ROOFSET[k].forEach(m => { m.visible = k !== open; }); renderer.shadowMap.needsUpdate = true; } }
   if (composer) composer.render(); else renderer.render(scene, camera);
   updateMini();
   /* labels */
